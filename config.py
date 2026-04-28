@@ -25,6 +25,22 @@ STAGE = 1
 LAST_STAGE = 6
 
 # ==================================================================
+# Token-specific hyperparameters (for main_with_tokens.py)
+# ==================================================================
+# TOKENS_ROOT: Root directory containing pre-computed CLIP token .npy files
+TOKENS_ROOT = "./data/clip_tokens/"
+# Shape of each token file: [NUM_TOKENS, TOKEN_DIM]
+# ViT-L/14: 257 × 1024  |  ViT-B/16: 197 × 768  |  ViT-B/32: 50 × 512
+# The defaults below match the [257 × 768] shape used in this project,
+# which corresponds to ViT-L/14 token count with ViT-B/16 dimension —
+# adjust NUM_TOKENS and TOKEN_DIM to match your actual pre-computed files.
+NUM_TOKENS = 257        # number of tokens per patch (1 CLS + 256 spatial)
+TOKEN_DIM = 768         # token embedding dimension (768 = ViT-B/16, 1024 = ViT-L/14)
+TOKEN_HIDDEN_DIM = 256  # attention pooling / confidence MLP hidden dim
+TOKEN_DROPOUT = 0.1     # dropout for token attention and confidence head
+CONF_ALPHA = 0.5        # weight of region confidence in TokenWeightedBCELoss
+
+# ==================================================================
 # 全局变量
 # ==================================================================
 current_training_iteration = torch.tensor([1])

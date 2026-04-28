@@ -7,4 +7,9 @@ scikit-learn>=0.24.0
 tqdm>=4.60.0
 Pillow>=8.0.0
 scipy>=1.6.0
+matplotlib>=3.3.0
+seaborn>=0.11.0
+# CLIP feature extraction (choose one):
+# openai/clip:  pip install git+https://github.com/openai/CLIP.git
+# open-clip-torch: pip install open-clip-torch
 
