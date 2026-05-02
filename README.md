@@ -53,6 +53,49 @@ python main.py --saveModel --lr 1e-3
 python main_single.py --saveModel --lr 1e-3
 ```
 
+### 5. Token-based training (CLIP embeddings)
+
+**Step 1: Extract CLIP tokens**
+
+```bash
+python extract_clip_tokens.py \
+    --annFile  all_single_small_82240_19400_19330.csv \
+    --img_root ./data/images/ \
+    --out_dir  ./data/clip_tokens/ \
+    --model    ViT-L/14
+```
+
+This writes one `.npy` file per patch and mirrors any subdirectory structure
+from the CSV `path` column (e.g., `sub/0001.jpg` → `./data/clip_tokens/sub/0001.npy`).
+
+**Step 2: Configure token shapes**
+
+Update `config.py` to match your CLIP export:
+
+```python
+TOKENS_ROOT = "./data/clip_tokens/"
+NUM_TOKENS = 257
+TOKEN_DIM = 768
+TOKEN_HIDDEN_DIM = 256
+TOKEN_DROPOUT = 0.1
+CONF_ALPHA = 0.5
+```
+
+**Step 3: Train with tokens**
+
+```bash
+python main_with_tokens.py \
+    --use_tokens \
+    --tokens_root ./data/clip_tokens/ \
+    --num_tokens 257 \
+    --token_dim 768 \
+    --token_hidden 256 \
+    --token_dropout 0.1 \
+    --conf_alpha 0.5 \
+    --saveModel \
+    --lr 1e-3
+```
+
 ## Parameters
 
 | Parameter | Description | Default |
@@ -67,6 +110,18 @@ python main_single.py --saveModel --lr 1e-3
 | `--trainingLabel` | Training label type (real/pseudo) | real |
 | `--granularity` | Weight granularity (label/sample) | label |
 | `--sampling` | Enable weighted sampling | False |
+
+**Token-specific parameters (main_with_tokens.py):**
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--use_tokens` | Use pre-computed CLIP token files | False |
+| `--tokens_root` | Root directory of `.npy` token files | `./data/clip_tokens/` |
+| `--num_tokens` | Tokens per patch | 257 |
+| `--token_dim` | Token embedding dimension | 768 |
+| `--token_hidden` | Hidden dimension for attention/confidence head | 256 |
+| `--token_dropout` | Dropout for token attention/confidence head | 0.1 |
+| `--conf_alpha` | Region confidence weight in loss | 0.5 |
 
 ## Features
 

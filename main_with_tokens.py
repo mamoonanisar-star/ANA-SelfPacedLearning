@@ -46,6 +46,7 @@ from config import (
     PATH_TRAIN_ANNFILE, PATH_TEST_ANNFILE,
     DIR_TRAIN_IMAGES, DIR_TEST_IMAGES,
     of1, cf1, best_mi, best_ma, best_acc, best_mAP,
+    TOKENS_ROOT, NUM_TOKENS, TOKEN_DIM, TOKEN_HIDDEN_DIM, TOKEN_DROPOUT, CONF_ALPHA,
 )
 from utils import (
     set_random_seed, Logger, inference, test_small, test, save,
@@ -82,15 +83,17 @@ parser.add_argument("--granularity",    default="label",       type=str)
 # Token-specific args
 parser.add_argument("--use_tokens",     action="store_true",
                     help="Use pre-computed CLIP token .npy files instead of images")
-parser.add_argument("--tokens_root",    default="./data/clip_tokens/", type=str,
+parser.add_argument("--tokens_root",    default=TOKENS_ROOT, type=str,
                     help="Root directory containing .npy token files")
-parser.add_argument("--num_tokens",     default=257,           type=int,
+parser.add_argument("--num_tokens",     default=NUM_TOKENS,     type=int,
                     help="Number of tokens per patch (e.g. 257 for CLIP ViT-L/14)")
-parser.add_argument("--token_dim",      default=768,           type=int,
+parser.add_argument("--token_dim",      default=TOKEN_DIM,      type=int,
                     help="Token embedding dimension (e.g. 768)")
-parser.add_argument("--token_hidden",   default=256,           type=int,
+parser.add_argument("--token_hidden",   default=TOKEN_HIDDEN_DIM, type=int,
                     help="Hidden dimension for token attention / confidence head")
-parser.add_argument("--conf_alpha",     default=0.5,           type=float,
+parser.add_argument("--token_dropout",  default=TOKEN_DROPOUT,  type=float,
+                    help="Dropout probability for token attention / confidence head")
+parser.add_argument("--conf_alpha",     default=CONF_ALPHA,     type=float,
                     help="Weight of region confidence in the loss (0 = SPL only)")
 parser.add_argument("--num_patches",    default=20,            type=int,
                     help="Expected patches per large image (informational only)")
@@ -198,6 +201,7 @@ if args.use_tokens:
         num_tokens=args.num_tokens,
         num_classes=NUM_CATEGORIES,
         hidden_dim=args.token_hidden,
+        dropout=args.token_dropout,
     )
     print(
         f"ANATokenClassifier | tokens={args.num_tokens} × dim={args.token_dim} "

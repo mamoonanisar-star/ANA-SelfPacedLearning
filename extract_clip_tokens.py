@@ -4,21 +4,21 @@ extract_clip_tokens.py
 Utility to extract CLIP token embeddings from ANA patch images and save
 them as .npy files for use with ANATokenDataset / main_with_tokens.py.
 
-Each output file contains an array of shape [num_tokens, token_dim], e.g.:
+    Each output file contains an array of shape [num_tokens, token_dim], e.g.:
   - ViT-B/16 : [197, 768]
   - ViT-L/14 : [257, 1024]
   - ViT-B/32 : [50,  512]
 
 Usage
 -----
-# Basic – extract tokens for all splits from a CSV
+    # Basic – extract tokens for all splits from a CSV
 python extract_clip_tokens.py \\
     --annFile  all_single_small_82240_19400_19330.csv \\
     --img_root ./data/images/ \\
     --out_dir  ./data/clip_tokens/ \\
     --model    ViT-L/14
 
-# Only process the training split
+    # Only process the training split
 python extract_clip_tokens.py \\
     --annFile  all_single_small_82240_19400_19330.csv \\
     --img_root ./data/images/ \\
@@ -139,7 +139,8 @@ def extract_tokens(
 ):
     """
     Extract CLIP token embeddings for all images in the annotation CSV and
-    save each as a .npy file in out_dir.
+    save each as a .npy file in out_dir, mirroring any subdirectory structure
+    found in the CSV `path` column.
 
     Args:
         annFile    : Path to the CSV annotation file.
@@ -171,7 +172,10 @@ def extract_tokens(
         img_path = os.path.join(img_root, img_rel_path)
 
         stem = os.path.splitext(os.path.basename(img_rel_path))[0]
-        out_path = os.path.join(out_dir, f"{stem}.npy")
+        rel_dir = os.path.dirname(img_rel_path)
+        out_subdir = os.path.join(out_dir, rel_dir) if rel_dir else out_dir
+        os.makedirs(out_subdir, exist_ok=True)
+        out_path = os.path.join(out_subdir, f"{stem}.npy")
 
         if os.path.isfile(out_path):
             continue  # already extracted
