@@ -107,3 +107,106 @@ See `requirements.txt` for full dependencies.
 
 This code is released for academic research use only.
 
+---
+
+## MIL Pipeline — CLIP ViT-L/14 Embeddings
+
+A validated, production-ready **Multi-Instance Learning (MIL)** pipeline for
+ANA fluorescence pattern classification using pre-computed CLIP ViT-L/14
+embeddings (`[257, 768]` per sample: 1 CLS token + 256 patch tokens).
+
+### New modules
+
+| File | Description |
+|------|-------------|
+| `mil_dataset.py` | `ANAFeatureDataset` — CSV validation, multi-label loading, class-imbalance stats, zero-tensor fallback |
+| `mil_model.py` | `MedicalProjectionHead` · `ClassWiseMaxPoolingHead` · `ANAMILModel` |
+| `mil_train.py` | AdamW training loop with BCEWithLogitsLoss, pos_weight, grad clipping, early stopping |
+| `mil_evaluate.py` | F1-Macro, mAP, per-class metrics, confusion matrix, threshold tuning |
+| `mil_inference.py` | Demo inference with clinical report |
+| `test_mil_pipeline.py` | 25 unit tests (run with `pytest test_mil_pipeline.py -v`) |
+
+### Architecture overview
+
+```
+tokens [B, 257, 768]
+  ├─ CLS token  [:, 0, :]  ──► MedicalProjectionHead (768→1024→512) ──► cls_feat  [B, 512]
+  └─ Patch toks [:, 1:, :] ──► MedicalProjectionHead (shared)       ──► patch_feats [B, 256, 512]
+                                        │
+                               ClassWiseMaxPoolingHead
+                               (per-class softmax attention)
+                                        │
+                               class_feats [B, 8, 512]
+                                        │
+  For each class c:  [cls_feat ; class_c_feat] → Linear(1024, 1) → logit_c
+```
+
+### Quickstart
+
+**Step 1 — Extract CLIP tokens** (if not already done)
+
+```bash
+python extract_clip_tokens.py \
+    --annFile ./data/features_index_english.csv \
+    --img_root ./data/images/ \
+    --out_dir  ./data/clip_tokens/ \
+    --model    ViT-L/14
+```
+
+**Step 2 — Train**
+
+```bash
+python mil_train.py \
+    --ann_file    ./data/features_index_english.csv \
+    --tokens_root ./data/clip_tokens/ \
+    --epochs 50 --batch_size 16 --lr 1e-4 \
+    --weight_decay 0.05 --patience 10 \
+    --checkpoint_dir ./checkpoints/
+```
+
+**Step 3 — Evaluate** (with optional threshold tuning)
+
+```bash
+python mil_evaluate.py \
+    --ann_file    ./data/features_index_english.csv \
+    --tokens_root ./data/clip_tokens/ \
+    --checkpoint  ./checkpoints/mil_best.pt \
+    --split test \
+    --tune_threshold
+```
+
+**Step 4 — Demo inference**
+
+```bash
+python mil_inference.py \
+    --ann_file    ./data/features_index_english.csv \
+    --tokens_root ./data/clip_tokens/ \
+    --checkpoint  ./checkpoints/mil_best.pt
+```
+
+### CSV label format
+
+Two formats are supported:
+
+| Format | Description | Columns |
+|--------|-------------|---------|
+| **TARGET** (sparse) | Space-separated class indices | `path`, `Split`, `TARGET` |
+| **Binary** (ICAP)   | One column per class (0/1)   | `path`, `Split`, `ICAP_AC`, `ICAP_CF`, … (8 columns) |
+
+For binary format, pass `--label_col_start <N>` where `N` is the zero-based
+column index of the first ICAP label column (default: 16).  The dataset
+validates that `N` through `N+8` fall within the CSV.
+
+### Design decisions & hyperparameter guidance
+
+| Decision | Rationale |
+|----------|-----------|
+| **BCEWithLogitsLoss** (not BCE) | Numerically stable log-sum-exp formulation. |
+| **pos_weight** per class | Computed from training set; corrects class imbalance automatically. |
+| **Early stopping on F1-Macro** | Treats all 8 classes equally; robust to class imbalance. |
+| **lr = 1e-4** | AdamW fine-tuning range for CLIP-derived features. Increase to 3e-4 if convergence is slow. |
+| **weight_decay = 0.05** | Standard decoupled AdamW value; lower to 0.01 if under-fitting. |
+| **batch_size = 16** | Safe for 12 GB GPU; increase to 32+ if memory allows. |
+| **grad_clip = 1.0** | Prevents gradient explosions with LayerNorm + attention. |
+| **Threshold = 0.5 → tunable** | `mil_evaluate.py --tune_threshold` searches 0.10–0.90 on the val set. |
+
