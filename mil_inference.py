@@ -176,7 +176,7 @@ def print_clinical_report(
             # Most attended patches for this class
             c_idx = names.index(name) if name in names else -1
             if 0 <= c_idx < len(attn_map):
-                top_patch_idxs = np.argsort(attn_map[c_idx])[::-1][:3] + 1  # +1: patch indices start at 1
+                top_patch_idxs = (np.argsort(attn_map[c_idx])[::-1][:3]) + 1  # +1: convert to 1-indexed
                 print(f"     Most relevant patches (1-indexed): {top_patch_idxs.tolist()}")
             print()
 

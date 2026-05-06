@@ -309,7 +309,7 @@ def train(
     # ------------------------------------------------------------------
     if os.path.isfile(ckpt_path):
         model.load_state_dict(torch.load(ckpt_path, map_location=dev))
-        logger.info("Loaded best model from %s (F1-Macro=%.4f).", ckpt_path, early_stopper.best_score)
+        logger.info("Loaded best model from %s (F1-Macro=%.4f).", ckpt_path, early_stopper.best_score or 0.0)
 
     return model
 

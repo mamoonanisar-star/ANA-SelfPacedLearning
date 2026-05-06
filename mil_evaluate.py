@@ -215,7 +215,7 @@ def tune_threshold(
         best_threshold (float) that maximises F1-Macro.
     """
     if candidates is None:
-        candidates = np.arange(0.10, 0.91, 0.05)
+        candidates = np.linspace(0.10, 0.90, 17)  # 0.10, 0.15, …, 0.90
 
     best_t  = 0.5
     best_f1 = -1.0
